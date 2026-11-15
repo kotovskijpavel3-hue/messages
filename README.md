@@ -97,20 +97,18 @@ render.yaml          деплой на Render
 
 ## Деплой на Deno Deploy
 
-1. **New App** → репозиторий `messages`.
-2. Настройки:
+Конфигурация приложения лежит в `deno.json` — секция `deploy.runtime` объявляет динамическое приложение с entrypoint `main.ts`. Если эта секция есть, Deno Deploy берёт настройки из файла и игнорирует поля в дашборде.
 
-| Поле | Значение |
-|---|---|
-| Framework preset | `No Preset` |
-| Install command | пусто |
-| Build command | пусто |
-| Pre-deploy command | пусто |
-| Entrypoint | `main.ts` |
+Из CLI:
 
-3. Deploy. Проверка — `/health` должен отдать `{"ok":true,...}`.
+```bash
+export DENO_DEPLOY_TOKEN=...
+deno deploy . --org chees-online --app messages --prod
+```
 
-Если `/health` отдаёт 404, а `/?` — просто HTML, значит приложение собралось как статический сайт: entrypoint не подхватился, чат работать не будет.
+Проверка после деплоя: `/health` должен отдать `{"ok":true,"users":0,...}`. Если вместо этого 404, а `/` отдаёт HTML — приложение собралось как статический сайт, и чат работать не будет.
+
+Важно: поле **App directory** в настройках приложения должно быть пустым, то есть корень репозитория. Если там указан файл (например `main.ts`), CLI падает с `Not a directory: realpath 'main.ts/deno.json'`, а сборка остаётся статической.
 
 ## Деплой на Render
 

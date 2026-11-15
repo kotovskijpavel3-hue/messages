@@ -1,0 +1,15 @@
+{
+  "deploy": {
+    "org": "chees-online",
+    "app": "messages-test",
+    "runtime": {
+      "type": "dynamic",
+      "entrypoint": "main.ts",
+      "cwd": "."
+    }
+  },
+  "tasks": {
+    "start": "deno run --allow-net --allow-env --allow-read main.ts",
+    "check": "deno check main.ts"
+  }
+}
