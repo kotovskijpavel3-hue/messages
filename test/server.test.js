@@ -41,8 +41,8 @@ function startServer() {
   });
 }
 
-function makeClient(name, room) {
-  const query = `?name=${encodeURIComponent(name)}${room ? `&room=${encodeURIComponent(room)}` : ''}`;
+function makeClient(name, room, clientId) {
+  const query = `?name=${encodeURIComponent(name)}${room ? `&room=${encodeURIComponent(room)}` : ''}${clientId ? `&client=${encodeURIComponent(clientId)}` : ''}`;
   const ws = new WebSocket(`ws://127.0.0.1:${PORT}/${query}`);
   const buffered = [];
   const waiters = [];
@@ -110,9 +110,15 @@ test('сервер: чат, файлы, комнаты по коду и парт
   assert.equal(index.status, 200);
   assert.match(await index.text(), /Messages Online/);
 
-  const a = makeClient('Тест А');
-  const b = makeClient('Тест Б');
-  const c = makeClient('Наблюдатель');
+  const css = await fetch(`${BASE}/style.css`);
+  const cssText = await css.text();
+  assert.equal(css.status, 200);
+  assert.match(cssText, /@media \(max-width: 520px\)/);
+  assert.match(cssText, /@media \(min-width: 901px\)/);
+
+  const a = makeClient('Тест А', '', 'client-a');
+  const b = makeClient('Тест Б', '', 'client-b');
+  const c = makeClient('Наблюдатель', '', 'client-c');
   t.after(() => {
     a.close();
     b.close();
@@ -173,11 +179,28 @@ test('сервер: чат, файлы, комнаты по коду и парт
   const ended = await blackClient.wait('game', (m) => m.game && m.game.status === 'over');
   assert.equal(ended.game.winner, 'b');
 
-  // --- комната по коду ---
+  // --- комната по коду и ограничение «одна своя комната» ---
   a.send('createRoom', { name: 'Тестовая комната', isPublic: false });
   const roomMsg = await a.wait('room', (m) => m.room.code !== 'MAIN');
   const code = roomMsg.room.code;
   assert.match(code, /^[A-Z0-9]{6}$/);
+
+  const roomList = await a.wait('rooms', (m) => m.rooms.some((room) => room.code === code));
+  assert.equal(roomList.rooms[0].code, 'MAIN', 'общая комната всегда первой');
+  assert.ok(roomList.rooms.find((room) => room.code === code).ownedByYou);
+
+  const a2 = makeClient('Тест А второй вкладкой', '', 'client-a');
+  t.after(() => a2.close());
+  const a2Welcome = await a2.wait('welcome');
+  assert.equal(a2Welcome.rooms[0].code, 'MAIN');
+  assert.ok(a2Welcome.rooms.find((room) => room.code === code).ownedByYou, 'своя комната узнаётся в другой вкладке');
+  a2.send('createRoom', { name: 'Вторая вкладка пытается создать', isPublic: false });
+  const duplicateOwnerLimit = await a2.wait('notice', (m) => m.level === 'err' && m.text.includes('уже есть своя комната'));
+  assert.ok(duplicateOwnerLimit, 'лимит действует между вкладками с тем же client id');
+
+  a.send('createRoom', { name: 'Вторая комната', isPublic: true });
+  const roomLimit = await a.wait('notice', (m) => m.level === 'err' && m.text.includes('уже есть своя комната'));
+  assert.ok(roomLimit, 'сервер должен запретить вторую созданную комнату');
 
   b.send('joinRoom', { code: code.toLowerCase() });
   const joined = await b.wait('room', (m) => m.room.code === code);

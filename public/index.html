@@ -38,11 +38,17 @@
       <button id="sideClose" class="icon-btn close-btn" aria-label="Закрыть">✕</button>
     </div>
 
-    <input id="searchUsers" class="input" type="search" placeholder="Поиск по имени…" autocomplete="off" enterkeyhint="search">
+    <label class="search-wrap">
+      <span class="search-icon" aria-hidden="true">⌕</span>
+      <input id="searchUsers" class="input" type="search" placeholder="Поиск по имени…" autocomplete="off" enterkeyhint="search">
+    </label>
     <div id="people" class="people"></div>
 
-    <div class="side-block">
-      <h3>Комната</h3>
+      <div class="side-block">
+      <div class="section-heading">
+        <h3>Комната</h3>
+        <span id="ownedRoomHint" class="owned-room-hint hidden">1 своя комната</span>
+      </div>
       <div class="row">
         <button id="createRoom" class="btn">Создать</button>
         <button id="copyLink" class="btn ghost">Ссылка</button>
@@ -55,7 +61,10 @@
     </div>
 
     <div class="side-block">
-      <h3>Комнаты</h3>
+      <div class="section-heading">
+        <h3>Список чатов</h3>
+        <span class="pin-label">ОБЩИЙ ЗАКРЕПЛЁН</span>
+      </div>
       <div id="roomsList" class="rooms"></div>
     </div>
 

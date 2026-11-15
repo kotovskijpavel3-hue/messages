@@ -110,8 +110,13 @@
     const params = new URLSearchParams(location.search);
     const room = params.get('room') || '';
     const name = localStorage.getItem('mo-name') || '';
+    let clientId = localStorage.getItem('mo-client-id');
+    if (!clientId) {
+      clientId = crypto.randomUUID();
+      localStorage.setItem('mo-client-id', clientId);
+    }
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const url = `${proto}//${location.host}/?room=${encodeURIComponent(room)}&name=${encodeURIComponent(name)}`;
+    const url = `${proto}//${location.host}/?room=${encodeURIComponent(room)}&name=${encodeURIComponent(name)}&client=${encodeURIComponent(clientId)}`;
 
     const ws = new WebSocket(url);
     state.ws = ws;
@@ -362,6 +367,21 @@
     renderFiles();
     renderOnlineCount();
     renderGame();
+    syncRoomControls();
+  }
+
+  function syncRoomControls() {
+    const owned = state.room && state.room.ownedByYou
+      ? state.room
+      : state.rooms.find((room) => room.ownedByYou);
+    const createButton = $('createRoom');
+    const hint = $('ownedRoomHint');
+    const blocked = Boolean(owned);
+    createButton.disabled = blocked;
+    createButton.title = blocked ? `У вас уже есть «${owned.name}» (${fmtCode(owned.code)})` : 'Создать свою комнату';
+    createButton.classList.toggle('disabled', blocked);
+    hint.classList.toggle('hidden', !blocked);
+    hint.textContent = blocked ? `Код ${fmtCode(owned.code)}` : '';
   }
 
   function renderOnlineCount() {
@@ -614,14 +634,22 @@
     box.innerHTML = '';
     const current = state.room ? state.room.code : null;
 
+    syncRoomControls();
     state.rooms.forEach((room) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = `room-item${room.code === current ? ' current' : ''}`;
+      if (room.main) btn.dataset.main = 'true';
 
       const name = document.createElement('span');
       name.className = 'r-name';
       name.textContent = room.main ? 'Общий чат' : room.name;
+      let pin = null;
+      if (room.main) {
+        pin = document.createElement('span');
+        pin.className = 'room-pin';
+        pin.textContent = 'ЗАКРЕПЛЁН';
+      }
 
       const code = document.createElement('span');
       code.className = 'r-code';
@@ -632,6 +660,7 @@
       count.textContent = String(room.members);
 
       btn.append(name, code, count);
+      if (pin) btn.appendChild(pin);
       btn.addEventListener('click', () => {
         if (room.code === current) return closeDrawer();
         send('joinRoom', { code: room.code });
@@ -899,6 +928,10 @@
     $('copyLink').addEventListener('click', copyRoomLink);
 
     $('createRoom').addEventListener('click', () => {
+      if ($('createRoom').disabled) {
+        toast('У вас уже есть своя комната. Одновременно можно создать только одну.', 'info');
+        return;
+      }
       const name = prompt('Название комнаты', `Комната ${state.me ? state.me.name : ''}`.trim());
       if (name === null) return;
       const isPublic = confirm('Показывать комнату в списке публичных?');
