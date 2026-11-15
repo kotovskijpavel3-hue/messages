@@ -17,6 +17,7 @@
     typing: new Map(),
     challenges: new Map(),
     lastDrawKey: null,
+    chatPinned: true,
     limits: { fileBytes: 8 * 1024 * 1024, roomBytes: 120 * 1024 * 1024, textLength: 2000 },
     ws: null,
     attempts: 0,
@@ -400,10 +401,30 @@
     return message.id;
   }
 
-  function renderMessages() {
+  function pinChatToBottom() {
     const box = $('messages');
-    const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 160;
-    const wasEmpty = box.childElementCount === 0;
+    if (!box || state.view !== 'chat' || !state.chatPinned) return;
+    box.scrollTop = box.scrollHeight;
+    requestAnimationFrame(() => {
+      box.scrollTop = box.scrollHeight;
+      updateJumpButton();
+    });
+  }
+
+  function updateJumpButton() {
+    const box = $('messages');
+    const button = $('jumpLatest');
+    if (!box || !button) return;
+    const distance = box.scrollHeight - box.scrollTop - box.clientHeight;
+    const atBottom = distance < 72;
+    button.classList.toggle('hidden', atBottom);
+    button.setAttribute('aria-hidden', atBottom ? 'true' : 'false');
+  }
+
+  function renderMessages(forceBottom = false) {
+    const box = $('messages');
+    const shouldPin = forceBottom || state.chatPinned;
+    const previousTop = box.scrollTop;
     box.innerHTML = '';
     const fragment = document.createDocumentFragment();
 
@@ -419,7 +440,14 @@
     });
 
     box.appendChild(fragment);
-    if (nearBottom || wasEmpty) box.scrollTop = box.scrollHeight;
+    if (shouldPin) {
+      state.chatPinned = true;
+      pinChatToBottom();
+    } else {
+      // Новые сообщения добавляются вниз: не сдвигаем человека, который читает историю.
+      box.scrollTop = previousTop;
+      updateJumpButton();
+    }
   }
 
   function renderMessage(message) {
@@ -845,8 +873,8 @@
       renderGame();
     }
     if (view === 'chat') {
-      const box = $('messages');
-      box.scrollTop = box.scrollHeight;
+      state.chatPinned = true;
+      requestAnimationFrame(pinChatToBottom);
     }
     if (view === 'files') renderFiles();
   }
@@ -910,6 +938,17 @@
 
     $('menuBtn').addEventListener('click', openDrawer);
     $('sideClose').addEventListener('click', closeDrawer);
+
+    const messagesBox = $('messages');
+    messagesBox.addEventListener('scroll', () => {
+      const distance = messagesBox.scrollHeight - messagesBox.scrollTop - messagesBox.clientHeight;
+      state.chatPinned = distance < 72;
+      updateJumpButton();
+    }, { passive: true });
+    $('jumpLatest').addEventListener('click', () => {
+      state.chatPinned = true;
+      pinChatToBottom();
+    });
     $('scrim').addEventListener('click', closeDrawer);
 
     $('meBtn').addEventListener('click', () => {
@@ -955,6 +994,26 @@
     const input = $('msgInput');
     const composer = $('composer');
     let typingAt = 0;
+
+    function keepComposerVisible() {
+      if (state.view !== 'chat') return;
+      requestAnimationFrame(() => {
+        const box = $('messages');
+        if (state.chatPinned) box.scrollTop = box.scrollHeight;
+        updateJumpButton();
+      });
+    }
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', keepComposerVisible);
+      window.visualViewport.addEventListener('scroll', keepComposerVisible);
+    }
+    input.addEventListener('focus', () => {
+      document.body.classList.add('keyboard-open');
+      setTimeout(keepComposerVisible, 80);
+      setTimeout(keepComposerVisible, 250);
+    });
+    input.addEventListener('blur', () => document.body.classList.remove('keyboard-open'));
 
     function autosize() {
       input.style.height = 'auto';
@@ -1042,6 +1101,7 @@
 
     window.addEventListener('resize', () => {
       if (window.innerWidth > 900) closeDrawer();
+      keepComposerVisible();
     });
   }
 

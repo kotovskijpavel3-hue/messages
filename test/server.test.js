@@ -115,6 +115,14 @@ test('сервер: чат, файлы, комнаты по коду и парт
   assert.equal(css.status, 200);
   assert.match(cssText, /@media \(max-width: 520px\)/);
   assert.match(cssText, /@media \(min-width: 901px\)/);
+  assert.match(cssText, /100dvh/);
+  assert.match(cssText, /\.jump-latest/);
+
+  const clientJs = await fetch(`${BASE}/app.js`);
+  const clientText = await clientJs.text();
+  assert.equal(clientJs.status, 200);
+  assert.match(clientText, /pinChatToBottom/);
+  assert.match(clientText, /state\.chatPinned = distance < 72/);
 
   const a = makeClient('Тест А', '', 'client-a');
   const b = makeClient('Тест Б', '', 'client-b');

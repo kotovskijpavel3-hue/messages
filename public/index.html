@@ -85,8 +85,9 @@
 
     <!-- ЧАТ -->
     <section id="view-chat" class="view active">
-      <div id="messages" class="messages" aria-live="polite"></div>
-      <div id="typing" class="typing"></div>
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <button id="jumpLatest" class="jump-latest hidden" type="button" aria-label="Перейти к последнему сообщению" aria-hidden="true">↓ <span>Новые сообщения</span></button>
+        <div id="typing" class="typing"></div>
       <form id="composer" class="composer">
         <button type="button" id="attachBtn" class="icon-btn" aria-label="Прикрепить файл">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12.5 14 6.5a3.5 3.5 0 0 1 5 5l-7 7a5 5 0 0 1-7-7l6.5-6.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
