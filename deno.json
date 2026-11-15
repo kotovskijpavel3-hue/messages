@@ -1,11 +1,10 @@
 {
   "deploy": {
     "org": "chees-online",
-    "app": "messages-test",
+    "app": "messages",
     "runtime": {
       "type": "dynamic",
-      "entrypoint": "main.ts",
-      "cwd": "."
+      "entrypoint": "main.ts"
     }
   },
   "tasks": {
