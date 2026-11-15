@@ -1,14 +1,12 @@
-'use strict';
-
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { spawn } = require('node:child_process');
-const path = require('node:path');
-const WebSocket = require('ws');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import WebSocket from 'ws';
 
 const PORT = 3399;
 const BASE = `http://127.0.0.1:${PORT}`;
-const ROOT = path.join(__dirname, '..');
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 let child = null;
 

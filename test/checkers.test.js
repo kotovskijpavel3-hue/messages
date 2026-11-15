@@ -1,8 +1,6 @@
-'use strict';
-
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const c = require('../lib/checkers');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import * as c from '../lib/checkers.js';
 
 const EMPTY = Array(8).fill('........');
 
